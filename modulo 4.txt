@@ -1,0 +1,56 @@
+# ================================
+# Práctica 1: Servidor HTTP (Apache)
+# ================================
+sudo dnf install httpd -y
+sudo systemctl enable --now httpd
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --reload
+
+sudo mkdir -p /var/www/hola.local/html
+echo "Hola Mundo" | sudo tee /var/www/hola.local/html/index.html
+
+sudo mkdir -p /var/www/sitio2.local/html
+echo "Contenido del segundo sitio web" | sudo tee /var/www/sitio2.local/html/index.html
+
+sudo nano /etc/httpd/conf.d/hola.local.conf
+sudo nano /etc/httpd/conf.d/sitio2.local.conf
+
+sudo systemctl restart httpd
+
+echo "127.0.0.1 hola.local" | sudo tee -a /etc/hosts
+echo "127.0.0.1 sitio2.local" | sudo tee -a /etc/hosts
+
+# ================================
+# Práctica 2: Servidor de Correo (Postfix + Gmail)
+# ================================
+sudo dnf install postfix mailx -y
+sudo systemctl enable --now postfix
+
+sudo nano /etc/postfix/main.cf
+sudo nano /etc/postfix/sasl_passwd
+
+sudo postmap /etc/postfix/sasl_passwd
+sudo chown root:root /etc/postfix/sasl_passwd /etc/postfix/sasl_passwd.db
+sudo chmod 600 /etc/postfix/sasl_passwd /etc/postfix/sasl_passwd.db
+
+sudo systemctl restart postfix
+
+echo "Mensaje de prueba" | mail -s "Asunto de prueba" destino@correo.com
+sudo tail -n 50 /var/log/maillog
+
+# ================================
+# Práctica 3: Servidor de Impresión (CUPS + PDF)
+# ================================
+sudo dnf install cups epel-release -y
+sudo dnf install cups-pdf -y
+sudo systemctl enable --now cups
+
+sudo firewall-cmd --permanent --add-port=631/tcp
+sudo firewall-cmd --reload
+
+sudo nano /etc/cups/cupsd.conf
+sudo systemctl restart cups
+
+lpstat -p
+ls /var/spool/cups-pdf/ANONYMOUS/
+cp /var/spool/cups-pdf/ANONYMOUS/*.pdf /home/usuario/Desktop/
