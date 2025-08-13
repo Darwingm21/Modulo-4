@@ -54,3 +54,91 @@ sudo systemctl restart cups
 lpstat -p
 ls /var/spool/cups-pdf/ANONYMOUS/
 cp /var/spool/cups-pdf/ANONYMOUS/*.pdf /home/usuario/Desktop/
+
+# Instalar Apache
+sudo dnf install httpd -y
+sudo systemctl enable --now httpd
+
+# Abrir puertos 80 y 8080
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-port=8080/tcp
+sudo firewall-cmd --reload
+
+# Sitio 1: Hola Mundo en puerto 80
+sudo mkdir -p /var/www/hola.local/html
+echo "Hola Mundo" | sudo tee /var/www/hola.local/html/index.html
+sudo nano /etc/httpd/conf.d/hola.local.conf
+# Contenido de hola.local.conf:
+# <VirtualHost *:80>
+#     ServerName hola.local
+#     DocumentRoot /var/www/hola.local/html
+# </VirtualHost>
+
+# Sitio 2: Nombre, matrícula, materia en puerto 8080
+sudo mkdir -p /var/www/sitio2.local/html
+echo "Darwing Peña - 20242690 - Sistemas Operativos 3" | sudo tee /var/www/sitio2.local/html/index.html
+echo "Listen 8080" | sudo tee -a /etc/httpd/conf/httpd.conf
+sudo nano /etc/httpd/conf.d/sitio2.local.conf
+# Contenido de sitio2.local.conf:
+# <VirtualHost *:8080>
+#     ServerName sitio2.local
+#     DocumentRoot /var/www/sitio2.local/html
+# </VirtualHost>
+
+# Reiniciar Apache
+sudo systemctl restart httpd
+
+# Hosts locales
+echo "127.0.0.1 hola.local" | sudo tee -a /etc/hosts
+echo "127.0.0.1 sitio2.local" | sudo tee -a /etc/hosts
+
+# Instalar Postfix y Mailx
+sudo dnf install postfix mailx -y
+sudo systemctl enable --now postfix
+
+# Editar configuración de Postfix
+sudo nano /etc/postfix/main.cf
+sudo nano /etc/postfix/sasl_passwd
+
+# Proteger archivo de credenciales
+sudo postmap /etc/postfix/sasl_passwd
+sudo chown root:root /etc/postfix/sasl_passwd /etc/postfix/sasl_passwd.db
+sudo chmod 600 /etc/postfix/sasl_passwd /etc/postfix/sasl_passwd.db
+
+# Reiniciar Postfix
+sudo systemctl restart postfix
+
+# Enviar correo obligatorio
+echo "Darwing Peña - 20242690" | mail -s "MambruSeFueALaGuerra" os3conadrian@gmail.com
+
+# Verificar envío
+sudo tail -n 50 /var/log/maillog
+
+# Instalar CUPS y PDF virtual
+sudo dnf install cups epel-release -y
+sudo dnf install cups-pdf -y
+sudo systemctl enable --now cups
+
+# Abrir puerto 631 para IP de clientes
+sudo firewall-cmd --permanent --add-port=631/tcp
+sudo firewall-cmd --reload
+
+# Configurar CUPS para acceso remoto
+sudo nano /etc/cups/cupsd.conf
+# Cambiar "Listen localhost:631" por "Port 631"
+# Permitir acceso en <Location /> y <Location /admin> con Allow @LOCAL
+
+sudo systemctl restart cups
+
+# Verificar impresoras
+lpstat -p
+
+# Ruta donde se guardan PDFs
+ls /var/spool/cups-pdf/ANONYMOUS/
+
+# Copiar PDF generado al escritorio
+cp /var/spool/cups-pdf/ANONYMOUS/*.pdf /home/usuario/Desktop/
+
+# Cliente Linux
+sudo dnf install cups -y
+sudo lpadmin -p ImpresoraRemota -E -v ipp://IP_DEL_SERVIDOR:631/printers/Impresora_PDF -m everywhere
